@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import useStore from '../store/useStore'
 import { analyzeRequirement, generateTask } from '../utils/aiEngine'
+import { PRODUCT_CATEGORIES, PRODUCT_CATEGORY_COLORS } from './Customers'
 
 const PRIORITY_BADGE = {
   高: 'bg-red-100 text-red-700 border border-red-200',
@@ -54,6 +55,7 @@ const defaultForm = {
   aiSummary: '',
   fileUrl: '',
   fileName: '',
+  productCategory: '',
 }
 
 function formatTime(isoStr) {
@@ -86,6 +88,7 @@ export default function Inbox() {
   const [statusFilter, setStatusFilter] = useState('全部')
   const [priorityFilter, setPriorityFilter] = useState('全部')
   const [customerFilter, setCustomerFilter] = useState('全部')
+  const [productCategoryFilter, setProductCategoryFilter] = useState('全部')
   const [selectedReq, setSelectedReq] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [editingReq, setEditingReq] = useState(null)
@@ -105,6 +108,7 @@ export default function Inbox() {
     if (statusFilter !== '全部' && r.status !== statusFilter) return false
     if (priorityFilter !== '全部' && r.priority !== priorityFilter) return false
     if (customerFilter !== '全部' && r.customerId !== customerFilter) return false
+    if (productCategoryFilter !== '全部' && r.productCategory !== productCategoryFilter) return false
     return true
   }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
@@ -134,6 +138,7 @@ export default function Inbox() {
       aiSummary: req.aiSummary || '',
       fileUrl: req.fileUrl || '',
       fileName: req.fileName || '',
+      productCategory: req.productCategory || '',
     })
     setAiResult(null)
     setShowModal(true)
@@ -168,11 +173,12 @@ export default function Inbox() {
       aiSummary: formData.aiSummary,
       fileUrl: formData.fileUrl,
       fileName: formData.fileName,
+      productCategory: formData.productCategory,
     }
     if (editingReq) {
       updateRequirement(editingReq.id, { ...payload, status: formData.status })
       if (selectedReq?.id === editingReq.id) {
-        setSelectedReq({ ...selectedReq, ...payload, status: formData.status, fileUrl: formData.fileUrl, fileName: formData.fileName })
+        setSelectedReq({ ...selectedReq, ...payload, status: formData.status, fileUrl: formData.fileUrl, fileName: formData.fileName, productCategory: formData.productCategory })
       }
       showToast('需求已更新')
     } else {
@@ -273,7 +279,17 @@ export default function Inbox() {
           </div>
 
           {/* Extra Filters */}
-          <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center gap-3 mb-5 flex-wrap">
+            <select
+              value={productCategoryFilter}
+              onChange={(e) => setProductCategoryFilter(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="全部">全部产品</option>
+              {PRODUCT_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
@@ -294,9 +310,9 @@ export default function Inbox() {
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
-            {(priorityFilter !== '全部' || customerFilter !== '全部') && (
+            {(productCategoryFilter !== '全部' || priorityFilter !== '全部' || customerFilter !== '全部') && (
               <button
-                onClick={() => { setPriorityFilter('全部'); setCustomerFilter('全部') }}
+                onClick={() => { setProductCategoryFilter('全部'); setPriorityFilter('全部'); setCustomerFilter('全部') }}
                 className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
               >
                 <X size={13} />
@@ -346,6 +362,14 @@ export default function Inbox() {
                         </span>
                         <span className="text-slate-300">·</span>
                         <span className="text-xs text-slate-400">{req.source}</span>
+                        {req.productCategory && (
+                          <>
+                            <span className="text-slate-300">·</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${PRODUCT_CATEGORY_COLORS[req.productCategory] || 'bg-slate-100 text-slate-500'}`}>
+                              {req.productCategory}
+                            </span>
+                          </>
+                        )}
                         {req.tags && req.tags.map((tag) => (
                           <span
                             key={tag}
@@ -422,6 +446,11 @@ export default function Inbox() {
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_BADGE[selectedReq.priority]}`}>
                   {selectedReq.priority}优先级
                 </span>
+                {selectedReq.productCategory && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRODUCT_CATEGORY_COLORS[selectedReq.productCategory] || 'bg-slate-100 text-slate-500'}`}>
+                    {selectedReq.productCategory}
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-y-2 text-sm">
                 <div>
@@ -570,13 +599,38 @@ export default function Inbox() {
                 />
               </div>
 
+              {/* Product Category */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  产品分类 <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.productCategory}
+                  onChange={(e) => setFormData({ ...formData, productCategory: e.target.value })}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">请选择产品分类</option>
+                  {PRODUCT_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Customer + Source */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">来源客户</label>
                   <select
                     value={formData.customerId}
-                    onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                    onChange={(e) => {
+                      const cid = e.target.value
+                      const customer = customers.find((c) => c.id === cid)
+                      setFormData({
+                        ...formData,
+                        customerId: cid,
+                        productCategory: customer?.productCategory || formData.productCategory,
+                      })
+                    }}
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">未关联客户</option>
@@ -778,7 +832,7 @@ export default function Inbox() {
               </button>
               <button
                 onClick={handleSaveRequirement}
-                disabled={!formData.title.trim() || !formData.content.trim()}
+                disabled={!formData.title.trim() || !formData.content.trim() || !formData.productCategory}
                 className="px-5 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg font-medium transition-colors"
               >
                 {editingReq ? '保存修改' : '保存需求'}
