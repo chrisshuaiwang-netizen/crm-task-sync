@@ -13,6 +13,7 @@ import {
   MessageSquare,
   AlertTriangle,
   Pencil,
+  Trash2,
 } from 'lucide-react'
 import useStore from '../store/useStore'
 import { analyzeRequirement, generateTask } from '../utils/aiEngine'
@@ -87,6 +88,7 @@ export default function Inbox() {
   const [aiAnalyzing, setAiAnalyzing] = useState(false)
   const [aiResult, setAiResult] = useState(null)
   const [generatingTask, setGeneratingTask] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
   const [toast, setToast] = useState(null)
 
   function showToast(message, type = 'success') {
@@ -193,6 +195,13 @@ export default function Inbox() {
       setGeneratingTask(false)
       showToast('任务已生成并添加到工作计划')
     }, 1200)
+  }
+
+  function handleDelete(id) {
+    deleteRequirement(id)
+    setShowDeleteConfirm(null)
+    if (selectedReq?.id === id) setSelectedReq(null)
+    showToast('需求已删除')
   }
 
   function toggleTag(tag) {
@@ -304,9 +313,17 @@ export default function Inbox() {
                       <p className="text-xs text-slate-400 line-clamp-1">{req.content}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CONFIG[req.status]?.badge}`}>
-                        {req.status}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CONFIG[req.status]?.badge}`}>
+                          {req.status}
+                        </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(req.id) }}
+                          className="p-1 rounded hover:bg-red-50 text-slate-300 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_BADGE[req.priority]}`}>
                         {req.priority}
                       </span>
@@ -659,6 +676,37 @@ export default function Inbox() {
                 className="px-5 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg font-medium transition-colors"
               >
                 {editingReq ? '保存修改' : '保存需求'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={20} className="text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-800">确认删除</h3>
+                <p className="text-sm text-slate-500 mt-0.5">需求删除后不可恢复</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => handleDelete(showDeleteConfirm)}
+                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+              >
+                确认删除
               </button>
             </div>
           </div>
