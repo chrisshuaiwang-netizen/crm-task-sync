@@ -4,7 +4,7 @@ import { Briefcase, LayoutDashboard, Users, Inbox, Calendar } from 'lucide-react
 const navItems = [
   { to: '/', label: '总览', icon: LayoutDashboard, end: true },
   { to: '/customers', label: '客户', icon: Users },
-  { to: '/inbox', label: '收件箱', icon: Inbox },
+  { to: '/inbox', label: '需求管理', icon: Inbox },
   { to: '/schedule', label: '工作计划', icon: Calendar },
 ]
 

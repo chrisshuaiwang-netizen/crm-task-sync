@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   MessageSquare,
   AlertTriangle,
+  Pencil,
 } from 'lucide-react'
 import useStore from '../store/useStore'
 import { analyzeRequirement, generateTask } from '../utils/aiEngine'
@@ -37,15 +38,15 @@ const TAG_COLORS = {
   体验优化: 'bg-teal-100 text-teal-700',
 }
 
-const SOURCES = ['微信', '会议', '邮件', '电话', '其他']
 const ALL_STATUSES = ['全部', '待评审', '开发中', '已上线', '已拒绝']
 
 const defaultForm = {
   title: '',
   content: '',
   customerId: '',
-  source: '微信',
+  source: '',
   priority: '中',
+  status: '待评审',
   tags: [],
   deadline: '',
   aiSummary: '',
@@ -81,6 +82,7 @@ export default function Inbox() {
   const [statusFilter, setStatusFilter] = useState('全部')
   const [selectedReq, setSelectedReq] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [editingReq, setEditingReq] = useState(null)
   const [formData, setFormData] = useState(defaultForm)
   const [aiAnalyzing, setAiAnalyzing] = useState(false)
   const [aiResult, setAiResult] = useState(null)
@@ -102,7 +104,25 @@ export default function Inbox() {
   }
 
   function openNewModal() {
+    setEditingReq(null)
     setFormData(defaultForm)
+    setAiResult(null)
+    setShowModal(true)
+  }
+
+  function openEditModal(req) {
+    setEditingReq(req)
+    setFormData({
+      title: req.title,
+      content: req.content,
+      customerId: req.customerId,
+      source: req.source || '',
+      priority: req.priority,
+      status: req.status,
+      tags: req.tags || [],
+      deadline: req.deadline || '',
+      aiSummary: req.aiSummary || '',
+    })
     setAiResult(null)
     setShowModal(true)
   }
@@ -125,20 +145,27 @@ export default function Inbox() {
 
   function handleSaveRequirement() {
     if (!formData.content.trim() || !formData.title.trim()) return
-    const req = {
+    const payload = {
       title: formData.title,
       content: formData.content,
       customerId: formData.customerId,
       tags: formData.tags.length > 0 ? formData.tags : ['新需求'],
       priority: formData.priority,
-      status: '待评审',
       source: formData.source,
       deadline: formData.deadline,
       aiSummary: formData.aiSummary,
     }
-    addRequirement(req)
+    if (editingReq) {
+      updateRequirement(editingReq.id, { ...payload, status: formData.status })
+      if (selectedReq?.id === editingReq.id) {
+        setSelectedReq({ ...selectedReq, ...payload, status: formData.status })
+      }
+      showToast('需求已更新')
+    } else {
+      addRequirement({ ...payload, status: '待评审' })
+      showToast('需求已记录')
+    }
     setShowModal(false)
-    showToast('需求已记录')
   }
 
   function handleStatusChange(reqId, newStatus) {
@@ -188,7 +215,7 @@ export default function Inbox() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">需求收件箱</h1>
+              <h1 className="text-2xl font-bold text-slate-800">需求管理</h1>
               <p className="text-slate-500 text-sm mt-0.5">共 {requirements.length} 条需求</p>
             </div>
             <button
@@ -300,18 +327,27 @@ export default function Inbox() {
       {selectedReq && (
         <div className="w-96 flex-shrink-0 flex flex-col bg-white overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${STATUS_CONFIG[selectedReq.status]?.dot}`} />
-              <h2 className="font-semibold text-slate-800 text-sm truncate max-w-[260px]">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_CONFIG[selectedReq.status]?.dot}`} />
+              <h2 className="font-semibold text-slate-800 text-sm truncate">
                 {selectedReq.title}
               </h2>
             </div>
-            <button
-              onClick={() => setSelectedReq(null)}
-              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X size={16} />
-            </button>
+            <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+              <button
+                onClick={() => openEditModal(selectedReq)}
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-500 transition-colors"
+                title="编辑需求"
+              >
+                <Pencil size={15} />
+              </button>
+              <button
+                onClick={() => setSelectedReq(null)}
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
@@ -428,7 +464,7 @@ export default function Inbox() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 flex-shrink-0">
-              <h3 className="text-lg font-semibold text-slate-800">记录需求</h3>
+              <h3 className="text-lg font-semibold text-slate-800">{editingReq ? '编辑需求' : '记录需求'}</h3>
               <button
                 onClick={() => setShowModal(false)}
                 className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
@@ -469,15 +505,13 @@ export default function Inbox() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">需求来源</label>
-                  <select
+                  <input
+                    type="text"
                     value={formData.source}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    {SOURCES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+                    placeholder="如：微信、会议…"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
               </div>
 
@@ -587,6 +621,29 @@ export default function Inbox() {
                   />
                 </div>
               </div>
+
+              {/* Status — 仅编辑时显示 */}
+              {editingReq && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">需求状态</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {['待评审', '开发中', '已上线', '已拒绝'].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, status: s })}
+                        className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-all ${
+                          formData.status === s
+                            ? `${STATUS_CONFIG[s]?.badge} border-current`
+                            : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 flex-shrink-0">
@@ -601,7 +658,7 @@ export default function Inbox() {
                 disabled={!formData.title.trim() || !formData.content.trim()}
                 className="px-5 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg font-medium transition-colors"
               >
-                保存需求
+                {editingReq ? '保存修改' : '保存需求'}
               </button>
             </div>
           </div>
