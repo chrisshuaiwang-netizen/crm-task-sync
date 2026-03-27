@@ -74,14 +74,22 @@ export default function Customers() {
   const [detailTab, setDetailTab] = useState('需求列表')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
 
-  const filtered = customers.filter((c) => {
-    const matchSearch =
-      c.name.includes(search) ||
-      c.contact.includes(search) ||
-      (c.industry && c.industry.includes(search))
-    const matchPriority = priorityFilter === '全部' || c.priority === priorityFilter
-    return matchSearch && matchPriority
-  })
+  const PRIORITY_ORDER = { 高: 0, 中: 1, 低: 2 }
+
+  const filtered = customers
+    .filter((c) => {
+      const matchSearch =
+        c.name.includes(search) ||
+        c.contact.includes(search) ||
+        (c.industry && c.industry.includes(search))
+      const matchPriority = priorityFilter === '全部' || c.priority === priorityFilter
+      return matchSearch && matchPriority
+    })
+    .sort((a, b) => {
+      const pd = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
+      if (pd !== 0) return pd
+      return new Date(b.createdAt) - new Date(a.createdAt)
+    })
 
   function openNewModal() {
     setEditingCustomer(null)
