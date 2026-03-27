@@ -29,6 +29,7 @@ const STATUS_CONFIG = {
   开发中: { badge: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500' },
   已上线: { badge: 'bg-green-100 text-green-700', dot: 'bg-green-500' },
   已拒绝: { badge: 'bg-red-100 text-red-600', dot: 'bg-red-400' },
+  已暂停: { badge: 'bg-gray-100 text-gray-600', dot: 'bg-gray-400' },
 }
 
 const TAG_COLORS = {
@@ -39,7 +40,7 @@ const TAG_COLORS = {
   体验优化: 'bg-teal-100 text-teal-700',
 }
 
-const ALL_STATUSES = ['全部', '待评审', '开发中', '已上线', '已拒绝']
+const ALL_STATUSES = ['全部', '待评审', '开发中', '已上线', '已拒绝', '已暂停']
 
 const defaultForm = {
   title: '',
@@ -51,6 +52,8 @@ const defaultForm = {
   tags: [],
   deadline: '',
   aiSummary: '',
+  fileUrl: '',
+  fileName: '',
 }
 
 function formatTime(isoStr) {
@@ -81,6 +84,8 @@ export default function Inbox() {
   const { requirements, customers, tasks, addRequirement, updateRequirement, deleteRequirement, addTask } = useStore()
 
   const [statusFilter, setStatusFilter] = useState('全部')
+  const [priorityFilter, setPriorityFilter] = useState('全部')
+  const [customerFilter, setCustomerFilter] = useState('全部')
   const [selectedReq, setSelectedReq] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [editingReq, setEditingReq] = useState(null)
@@ -96,9 +101,12 @@ export default function Inbox() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  const filtered = requirements.filter(
-    (r) => statusFilter === '全部' || r.status === statusFilter
-  ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  const filtered = requirements.filter((r) => {
+    if (statusFilter !== '全部' && r.status !== statusFilter) return false
+    if (priorityFilter !== '全部' && r.priority !== priorityFilter) return false
+    if (customerFilter !== '全部' && r.customerId !== customerFilter) return false
+    return true
+  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
   function getCustomerName(customerId) {
     const c = customers.find((c) => c.id === customerId)
@@ -124,6 +132,8 @@ export default function Inbox() {
       tags: req.tags || [],
       deadline: req.deadline || '',
       aiSummary: req.aiSummary || '',
+      fileUrl: req.fileUrl || '',
+      fileName: req.fileName || '',
     })
     setAiResult(null)
     setShowModal(true)
@@ -156,11 +166,13 @@ export default function Inbox() {
       source: formData.source,
       deadline: formData.deadline,
       aiSummary: formData.aiSummary,
+      fileUrl: formData.fileUrl,
+      fileName: formData.fileName,
     }
     if (editingReq) {
       updateRequirement(editingReq.id, { ...payload, status: formData.status })
       if (selectedReq?.id === editingReq.id) {
-        setSelectedReq({ ...selectedReq, ...payload, status: formData.status })
+        setSelectedReq({ ...selectedReq, ...payload, status: formData.status, fileUrl: formData.fileUrl, fileName: formData.fileName })
       }
       showToast('需求已更新')
     } else {
@@ -258,6 +270,39 @@ export default function Inbox() {
                 </span>
               </button>
             ))}
+          </div>
+
+          {/* Extra Filters */}
+          <div className="flex items-center gap-3 mb-5">
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="全部">全部优先级</option>
+              <option value="高">高优先级</option>
+              <option value="中">中优先级</option>
+              <option value="低">低优先级</option>
+            </select>
+            <select
+              value={customerFilter}
+              onChange={(e) => setCustomerFilter(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="全部">全部客户</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            {(priorityFilter !== '全部' || customerFilter !== '全部') && (
+              <button
+                onClick={() => { setPriorityFilter('全部'); setCustomerFilter('全部') }}
+                className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+              >
+                <X size={13} />
+                清除筛选
+              </button>
+            )}
           </div>
 
           {/* Requirements List */}
@@ -432,11 +477,31 @@ export default function Inbox() {
               </div>
             )}
 
+            {/* File Attachments */}
+            {(selectedReq.fileUrl || selectedReq.fileName) && (
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">附件</h4>
+                {selectedReq.fileUrl && (
+                  <a
+                    href={selectedReq.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-blue-600 hover:underline break-all block mb-1"
+                  >
+                    {selectedReq.fileUrl}
+                  </a>
+                )}
+                {selectedReq.fileName && !selectedReq.fileUrl && (
+                  <p className="text-xs text-slate-600">{selectedReq.fileName}</p>
+                )}
+              </div>
+            )}
+
             {/* Status Actions */}
             <div className="px-5 py-4 border-b border-slate-100">
               <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">状态变更</h4>
               <div className="flex flex-wrap gap-2">
-                {['待评审', '开发中', '已上线', '已拒绝'].map((s) => (
+                {['待评审', '开发中', '已上线', '已拒绝', '已暂停'].map((s) => (
                   <button
                     key={s}
                     onClick={() => handleStatusChange(selectedReq.id, s)}
@@ -644,7 +709,7 @@ export default function Inbox() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">需求状态</label>
                   <div className="flex gap-2 flex-wrap">
-                    {['待评审', '开发中', '已上线', '已拒绝'].map((s) => (
+                    {['待评审', '开发中', '已上线', '已拒绝', '已暂停'].map((s) => (
                       <button
                         key={s}
                         type="button"
@@ -661,6 +726,47 @@ export default function Inbox() {
                   </div>
                 </div>
               )}
+
+              {/* File Attachments */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  文件地址
+                  <span className="text-xs text-slate-400 ml-1 font-normal">（选填）</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.fileUrl}
+                  onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
+                  placeholder="粘贴文件链接或路径…"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  上传文件
+                  <span className="text-xs text-slate-400 ml-1 font-normal">（选填，仅记录文件名）</span>
+                </label>
+                <input
+                  type="file"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) setFormData((prev) => ({ ...prev, fileName: file.name }))
+                  }}
+                  className="w-full text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                {formData.fileName && (
+                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                    已选：{formData.fileName}
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, fileName: '' }))}
+                      className="text-slate-400 hover:text-red-500"
+                    >
+                      <X size={12} />
+                    </button>
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 flex-shrink-0">
