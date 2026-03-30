@@ -152,9 +152,11 @@ const sampleTasks = [
     requirementId: 'r2',
     customerId: 'c1',
     date: todayStr,
+    endDate: tomorrowStr,
     hours: 2,
     status: '进行中',
     priority: '高',
+    taskType: 'pm',
   },
   {
     id: 't2',
@@ -163,9 +165,12 @@ const sampleTasks = [
     requirementId: 'r3',
     customerId: 'c2',
     date: todayStr,
+    endDate: tomorrowStr,
     hours: 1,
     status: '待处理',
     priority: '高',
+    taskType: 'dev',
+    progress: '已完成后端接口排查，等待开发修复缓存逻辑',
   },
   {
     id: 't3',
@@ -174,9 +179,11 @@ const sampleTasks = [
     requirementId: 'r4',
     customerId: 'c3',
     date: todayStr,
+    endDate: '',
     hours: 3,
     status: '待处理',
     priority: '中',
+    taskType: 'pm',
   },
   {
     id: 't4',
@@ -185,9 +192,11 @@ const sampleTasks = [
     requirementId: null,
     customerId: null,
     date: todayStr,
+    endDate: '',
     hours: 1,
     status: '待处理',
     priority: '中',
+    taskType: 'pm',
   },
   {
     id: 't5',
@@ -196,9 +205,29 @@ const sampleTasks = [
     requirementId: 'r1',
     customerId: 'c1',
     date: yesterdayStr,
+    endDate: '',
     hours: 2,
     status: '已完成',
     priority: '高',
+    taskType: 'dev',
+    progress: '测试通过，已提交测试报告，等待产品上线审批',
+  },
+]
+
+const sampleDailyNotes = [
+  {
+    id: 'n1',
+    title: '云信科技周例会',
+    content: '讨论了权限模块排期，确认4月底上线。张总提出新增数据导出需求，已记录待评审。前后端资源已协调到位。',
+    date: todayStr,
+    category: '会议',
+  },
+  {
+    id: 'n2',
+    title: '与慧联数据李晓燕沟通看板问题',
+    content: '李晓燕反馈数据看板在演示环境稳定，但生产环境仍有偶发问题。约定本周五前给出修复方案，下周一上线。',
+    date: yesterdayStr,
+    category: '沟通',
   },
 ]
 
@@ -208,6 +237,7 @@ const useStore = create(
       customers: sampleCustomers,
       requirements: sampleRequirements,
       tasks: sampleTasks,
+      dailyNotes: sampleDailyNotes,
 
       // Customer actions
       addCustomer: (customer) =>
@@ -241,6 +271,23 @@ const useStore = create(
       deleteRequirement: (id) =>
         set((state) => ({
           requirements: state.requirements.filter((r) => r.id !== id),
+        })),
+
+      // Daily Note actions
+      addDailyNote: (note) =>
+        set((state) => ({
+          dailyNotes: [
+            ...state.dailyNotes,
+            { ...note, id: `n${Date.now()}`, createdAt: new Date().toISOString() },
+          ],
+        })),
+      updateDailyNote: (id, updates) =>
+        set((state) => ({
+          dailyNotes: state.dailyNotes.map((n) => (n.id === id ? { ...n, ...updates } : n)),
+        })),
+      deleteDailyNote: (id) =>
+        set((state) => ({
+          dailyNotes: state.dailyNotes.filter((n) => n.id !== id),
         })),
 
       // Task actions
