@@ -26,11 +26,13 @@ const PRIORITY_BADGE = {
 }
 
 const STATUS_CONFIG = {
+  未开始: { badge: 'bg-slate-100 text-slate-500', dot: 'bg-slate-300' },
+  方案中: { badge: 'bg-indigo-100 text-indigo-600', dot: 'bg-indigo-400' },
   待评审: { badge: 'bg-yellow-100 text-yellow-700', dot: 'bg-yellow-400' },
   开发中: { badge: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500' },
   已上线: { badge: 'bg-green-100 text-green-700', dot: 'bg-green-500' },
-  已拒绝: { badge: 'bg-red-100 text-red-600', dot: 'bg-red-400' },
   已暂停: { badge: 'bg-gray-100 text-gray-600', dot: 'bg-gray-400' },
+  已拒绝: { badge: 'bg-red-100 text-red-600', dot: 'bg-red-400' },
 }
 
 const TAG_COLORS = {
@@ -41,7 +43,7 @@ const TAG_COLORS = {
   体验优化: 'bg-teal-100 text-teal-700',
 }
 
-const ALL_STATUSES = ['全部', '待评审', '开发中', '已上线', '已拒绝', '已暂停']
+const ALL_STATUSES = ['全部', '未开始', '方案中', '待评审', '开发中', '已上线', '已暂停', '已拒绝']
 
 const defaultForm = {
   title: '',
@@ -49,7 +51,7 @@ const defaultForm = {
   customerId: '',
   source: '',
   priority: '中',
-  status: '待评审',
+  status: '未开始',
   tags: [],
   deadline: '',
   aiSummary: '',
@@ -111,7 +113,7 @@ export default function Inbox() {
     if (productCategoryFilter !== '全部' && r.productCategory !== productCategoryFilter) return false
     return true
   }).sort((a, b) => {
-    const STATUS_ORDER = { 待评审: 0, 开发中: 1, 已上线: 2, 已暂停: 3, 已拒绝: 4 }
+    const STATUS_ORDER = { 未开始: 0, 方案中: 1, 待评审: 2, 开发中: 3, 已上线: 4, 已暂停: 5, 已拒绝: 6 }
     const sd = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99)
     if (sd !== 0) return sd
     return new Date(b.createdAt) - new Date(a.createdAt)
@@ -535,7 +537,7 @@ export default function Inbox() {
             <div className="px-5 py-4 border-b border-slate-100">
               <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">状态变更</h4>
               <div className="flex flex-wrap gap-2">
-                {['待评审', '开发中', '已上线', '已拒绝', '已暂停'].map((s) => (
+                {['未开始', '方案中', '待评审', '开发中', '已上线', '已暂停', '已拒绝'].map((s) => (
                   <button
                     key={s}
                     onClick={() => handleStatusChange(selectedReq.id, s)}
@@ -768,7 +770,7 @@ export default function Inbox() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">需求状态</label>
                   <div className="flex gap-2 flex-wrap">
-                    {['待评审', '开发中', '已上线', '已拒绝', '已暂停'].map((s) => (
+                    {['未开始', '方案中', '待评审', '开发中', '已上线', '已暂停', '已拒绝'].map((s) => (
                       <button
                         key={s}
                         type="button"

@@ -10,10 +10,12 @@ import {
   Sparkles,
   Loader2,
   ChevronDown,
+  ChevronRight,
   Trash2,
   AlertTriangle,
   PlayCircle,
   TrendingUp,
+  Pencil,
 } from 'lucide-react'
 import useStore from '../store/useStore'
 import { generateDailyPriority } from '../utils/aiEngine'
@@ -64,6 +66,7 @@ const defaultForm = {
   title: '',
   desc: '',
   date: getTodayStr(),
+  endDate: '',
   hours: 1,
   priority: '中',
   requirementId: '',
@@ -91,7 +94,9 @@ export default function Schedule() {
 
   const [activeTab, setActiveTab] = useState('today')
   const [showModal, setShowModal] = useState(false)
+  const [editingTask, setEditingTask] = useState(null)
   const [formData, setFormData] = useState(defaultForm)
+  const [expandedTasks, setExpandedTasks] = useState(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
   const [aiSorting, setAiSorting] = useState(false)
   const [aiReasoning, setAiReasoning] = useState(null)
@@ -106,6 +111,14 @@ export default function Schedule() {
     setTimeout(() => setToast(null), 3500)
   }
 
+  function toggleExpand(id) {
+    setExpandedTasks((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
   const todayTasks = useMemo(
     () =>
       tasks
@@ -113,8 +126,10 @@ export default function Schedule() {
         .sort((a, b) => {
           const pw = { 高: 3, 中: 2, 低: 1 }
           const sw = { 进行中: 3, 待处理: 2, 已完成: 0 }
-          return (pw[b.priority] || 1) - (pw[a.priority] || 1) ||
+          return (
+            (pw[b.priority] || 1) - (pw[a.priority] || 1) ||
             (sw[b.status] || 0) - (sw[a.status] || 0)
+          )
         }),
     [tasks, todayStr]
   )
@@ -143,7 +158,23 @@ export default function Schedule() {
   }
 
   function openNewModal() {
+    setEditingTask(null)
     setFormData({ ...defaultForm, date: todayStr })
+    setShowModal(true)
+  }
+
+  function openEditModal(task) {
+    setEditingTask(task)
+    setFormData({
+      title: task.title,
+      desc: task.desc || '',
+      date: task.date || getTodayStr(),
+      endDate: task.endDate || '',
+      hours: task.hours || 1,
+      priority: task.priority,
+      requirementId: task.requirementId || '',
+      status: task.status,
+    })
     setShowModal(true)
   }
 
@@ -152,18 +183,26 @@ export default function Schedule() {
     const linked = formData.requirementId
       ? requirements.find((r) => r.id === formData.requirementId)
       : null
-    addTask({
+    const payload = {
       title: formData.title,
       desc: formData.desc,
       date: formData.date,
+      endDate: formData.endDate,
       hours: Number(formData.hours),
       priority: formData.priority,
       status: formData.status,
       requirementId: formData.requirementId || null,
       customerId: linked ? linked.customerId : null,
-    })
+    }
+    if (editingTask) {
+      updateTask(editingTask.id, payload)
+      showToast('任务已更新')
+    } else {
+      addTask(payload)
+      showToast('任务已添加')
+    }
     setShowModal(false)
-    showToast('任务已添加')
+    setEditingTask(null)
   }
 
   function handleStatusChange(taskId, newStatus) {
@@ -179,10 +218,7 @@ export default function Schedule() {
         if (allDone) {
           const req = requirements.find((r) => r.id === task.requirementId)
           if (req && req.status !== '已上线') {
-            setReqUpdatePrompt({
-              reqId: task.requirementId,
-              reqTitle: req.title,
-            })
+            setReqUpdatePrompt({ reqId: task.requirementId, reqTitle: req.title })
           }
         }
       }
@@ -211,6 +247,142 @@ export default function Schedule() {
 
   const todayHours = todayTasks.reduce((s, t) => s + (t.hours || 0), 0)
   const todayDoneCount = todayTasks.filter((t) => t.status === '已完成').length
+
+  function TaskCard({ task, showExpand = true }) {
+    const isExpanded = expandedTasks.has(task.id)
+    const isOverdue = task.date < todayStr && task.status !== '已完成'
+    const StatusIcon = STATUS_ICON[task.status] || Circle
+    return (
+      <div
+        className={`bg-white rounded-xl border shadow-sm transition-all ${
+          isOverdue ? 'border-red-300 ring-1 ring-red-100' : 'border-slate-200'
+        } ${task.status === '已完成' ? 'opacity-60' : ''}`}
+      >
+        {/* Main row */}
+        <div className="flex items-start gap-3 p-4">
+          <button
+            onClick={() => {
+              const next =
+                task.status === '待处理' ? '进行中' : task.status === '进行中' ? '已完成' : '待处理'
+              handleStatusChange(task.id, next)
+            }}
+            className="mt-0.5 flex-shrink-0"
+          >
+            <StatusIcon size={20} className={STATUS_COLOR[task.status]} />
+          </button>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <p
+                className={`text-sm font-medium leading-snug ${
+                  task.status === '已完成' ? 'line-through text-slate-400' : 'text-slate-800'
+                }`}
+              >
+                {task.title}
+                {isOverdue && (
+                  <span className="ml-2 text-xs text-red-500 font-normal">已逾期</span>
+                )}
+              </p>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_BADGE[task.priority]}`}>
+                  {task.priority}
+                </span>
+                {showExpand && (
+                  <button
+                    onClick={() => toggleExpand(task.id)}
+                    className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  </button>
+                )}
+                <button
+                  onClick={() => openEditModal(task)}
+                  className="p-1 hover:bg-blue-50 rounded text-slate-300 hover:text-blue-500 transition-colors"
+                >
+                  <Pencil size={13} />
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(task.id)}
+                  className="p-1 hover:bg-red-50 rounded text-slate-300 hover:text-red-400 transition-colors"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+
+            {/* Collapsed summary */}
+            {!isExpanded && task.desc && (
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-1">{task.desc}</p>
+            )}
+
+            {/* Collapsed meta */}
+            {!isExpanded && (
+              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                {(task.date || task.endDate) && (
+                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                    <Calendar size={11} />
+                    {task.date}{task.endDate ? ` → ${task.endDate}` : ''}
+                  </span>
+                )}
+                <span className="text-xs text-slate-400 flex items-center gap-1">
+                  <Clock size={11} />
+                  {task.hours}h
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Expanded detail */}
+        {isExpanded && (
+          <div className="border-t border-slate-100 px-4 py-3 space-y-3 bg-slate-50 rounded-b-xl">
+            {task.desc && (
+              <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{task.desc}</p>
+            )}
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500">
+              <span className="flex items-center gap-1">
+                <Calendar size={11} className="text-slate-400" />
+                开始：{task.date || '未设置'}
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar size={11} className="text-slate-400" />
+                截止：{task.endDate || '未设置'}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock size={11} className="text-slate-400" />
+                {task.hours}h
+              </span>
+            </div>
+            {(task.customerId || task.requirementId) && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {task.customerId && (
+                  <span className="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded">
+                    {getCustomerName(task.customerId)}
+                  </span>
+                )}
+                {task.requirementId && (
+                  <span className="bg-blue-50 text-blue-600 text-xs px-2 py-0.5 rounded max-w-[200px] truncate">
+                    {getReqTitle(task.requirementId)}
+                  </span>
+                )}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <select
+                value={task.status}
+                onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-screen">
@@ -257,7 +429,6 @@ export default function Schedule() {
         {/* Tab: Today */}
         {activeTab === 'today' && (
           <div>
-            {/* AI Priority Button */}
             <div className="flex items-center gap-3 mb-4">
               <button
                 onClick={handleAiPriority}
@@ -277,16 +448,12 @@ export default function Schedule() {
                 )}
               </button>
               {aiReasoning && (
-                <button
-                  onClick={() => setAiReasoning(null)}
-                  className="text-xs text-slate-400 hover:text-slate-600"
-                >
+                <button onClick={() => setAiReasoning(null)} className="text-xs text-slate-400 hover:text-slate-600">
                   收起
                 </button>
               )}
             </div>
 
-            {/* AI Reasoning */}
             {aiReasoning && (
               <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 mb-4">
                 <div className="flex items-center gap-1.5 mb-2">
@@ -303,115 +470,15 @@ export default function Schedule() {
               <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                 <Calendar size={40} className="mb-3 text-slate-200" />
                 <p className="text-base">今日暂无任务</p>
-                <button
-                  onClick={openNewModal}
-                  className="mt-3 text-blue-500 text-sm hover:underline"
-                >
+                <button onClick={openNewModal} className="mt-3 text-blue-500 text-sm hover:underline">
                   添加今日任务
                 </button>
               </div>
             ) : (
               <div className="space-y-2 max-w-3xl">
-                {todayTasks.map((task) => {
-                  const isOverdue =
-                    task.date < todayStr && task.status !== '已完成'
-                  const StatusIcon = STATUS_ICON[task.status] || Circle
-                  return (
-                    <div
-                      key={task.id}
-                      className={`bg-white rounded-xl border shadow-sm p-4 transition-all ${
-                        isOverdue ? 'border-red-300 ring-1 ring-red-100' : 'border-slate-200'
-                      } ${task.status === '已完成' ? 'opacity-60' : ''}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Status icon */}
-                        <button
-                          onClick={() => {
-                            const next =
-                              task.status === '待处理'
-                                ? '进行中'
-                                : task.status === '进行中'
-                                ? '已完成'
-                                : '待处理'
-                            handleStatusChange(task.id, next)
-                          }}
-                          className="mt-0.5 flex-shrink-0"
-                        >
-                          <StatusIcon size={20} className={STATUS_COLOR[task.status]} />
-                        </button>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <p
-                              className={`text-sm font-medium leading-snug ${
-                                task.status === '已完成'
-                                  ? 'line-through text-slate-400'
-                                  : 'text-slate-800'
-                              }`}
-                            >
-                              {task.title}
-                              {isOverdue && (
-                                <span className="ml-2 text-xs text-red-500 font-normal">
-                                  已逾期
-                                </span>
-                              )}
-                            </p>
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_BADGE[task.priority]}`}>
-                                {task.priority}
-                              </span>
-                            </div>
-                          </div>
-
-                          {task.desc && (
-                            <p className="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-1">
-                              {task.desc}
-                            </p>
-                          )}
-
-                          <div className="flex items-center gap-3 mt-2">
-                            {(task.customerId || task.requirementId) && (
-                              <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                                {task.customerId && (
-                                  <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">
-                                    {getCustomerName(task.customerId)}
-                                  </span>
-                                )}
-                                {task.requirementId && (
-                                  <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded max-w-[120px] truncate">
-                                    {getReqTitle(task.requirementId)}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            <span className="text-xs text-slate-400 flex items-center gap-1 ml-auto">
-                              <Clock size={11} />
-                              {task.hours}h
-                            </span>
-                            {/* Status dropdown */}
-                            <div className="relative">
-                              <select
-                                value={task.status}
-                                onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                                className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer"
-                              >
-                                {STATUS_OPTIONS.map((s) => (
-                                  <option key={s} value={s}>{s}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <button
-                              onClick={() => setShowDeleteConfirm(task.id)}
-                              className="p-1 hover:bg-red-50 rounded text-slate-300 hover:text-red-400 transition-colors"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
+                {todayTasks.map((task) => (
+                  <TaskCard key={task.id} task={task} showExpand />
+                ))}
               </div>
             )}
           </div>
@@ -439,47 +506,7 @@ export default function Schedule() {
                     </div>
                     <div className="space-y-2 pl-2">
                       {pts.map((task) => (
-                        <div
-                          key={task.id}
-                          className="bg-white rounded-xl border border-slate-200 shadow-sm p-4"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-slate-800 leading-snug">
-                                {task.title}
-                              </p>
-                              {task.desc && (
-                                <p className="text-xs text-slate-500 mt-1 line-clamp-1">{task.desc}</p>
-                              )}
-                              <div className="flex items-center gap-2 mt-2">
-                                <span className="text-xs text-slate-400 flex items-center gap-1">
-                                  <Calendar size={11} />
-                                  {task.date}
-                                </span>
-                                <span className="text-xs text-slate-400 flex items-center gap-1">
-                                  <Clock size={11} />
-                                  {task.hours}h
-                                </span>
-                                {task.customerId && (
-                                  <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
-                                    {getCustomerName(task.customerId)}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <select
-                                value={task.status}
-                                onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                                className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
-                              >
-                                {STATUS_OPTIONS.map((s) => (
-                                  <option key={s} value={s}>{s}</option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-                        </div>
+                        <TaskCard key={task.id} task={task} showExpand />
                       ))}
                     </div>
                   </div>
@@ -500,43 +527,7 @@ export default function Schedule() {
             ) : (
               <div className="space-y-2">
                 {completedTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 opacity-75"
-                  >
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-600 line-through leading-snug">
-                          {task.title}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <Calendar size={11} />
-                            {task.date}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock size={11} />
-                            {task.hours}h
-                          </span>
-                          {task.customerId && (
-                            <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">
-                              {getCustomerName(task.customerId)}
-                            </span>
-                          )}
-                          <span className={`px-1.5 py-0.5 rounded ${PRIORITY_BADGE[task.priority]}`}>
-                            {task.priority}
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setShowDeleteConfirm(task.id)}
-                        className="p-1 hover:bg-red-50 rounded text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
+                  <TaskCard key={task.id} task={task} showExpand />
                 ))}
               </div>
             )}
@@ -544,14 +535,16 @@ export default function Schedule() {
         )}
       </div>
 
-      {/* New Task Modal */}
+      {/* New / Edit Task Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 flex-shrink-0">
-              <h3 className="text-lg font-semibold text-slate-800">新增任务</h3>
+              <h3 className="text-lg font-semibold text-slate-800">
+                {editingTask ? '编辑任务' : '新增任务'}
+              </h3>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => { setShowModal(false); setEditingTask(null) }}
                 className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X size={18} />
@@ -583,9 +576,10 @@ export default function Schedule() {
                 />
               </div>
 
+              {/* Start + End date */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">日期</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">开始日期</label>
                   <input
                     type="date"
                     value={formData.date}
@@ -594,22 +588,29 @@ export default function Schedule() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    预计时长 (h)
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">截止日期</label>
                   <input
-                    type="number"
-                    min="0.5"
-                    max="8"
-                    step="0.5"
-                    value={formData.hours}
-                    onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">预计时长 (h)</label>
+                  <input
+                    type="number"
+                    min="0.5"
+                    max="99"
+                    step="0.5"
+                    value={formData.hours}
+                    onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">优先级</label>
                   <select
@@ -622,18 +623,19 @@ export default function Schedule() {
                     <option value="低">低</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">初始状态</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">状态</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -661,7 +663,7 @@ export default function Schedule() {
 
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 flex-shrink-0">
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => { setShowModal(false); setEditingTask(null) }}
                 className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 取消
@@ -671,7 +673,7 @@ export default function Schedule() {
                 disabled={!formData.title.trim()}
                 className="px-5 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg font-medium transition-colors"
               >
-                创建任务
+                {editingTask ? '保存修改' : '创建任务'}
               </button>
             </div>
           </div>
@@ -750,13 +752,7 @@ export default function Schedule() {
       )}
 
       {/* Toast */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   )
 }
