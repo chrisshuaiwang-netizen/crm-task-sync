@@ -110,7 +110,12 @@ export default function Inbox() {
     if (customerFilter !== '全部' && r.customerId !== customerFilter) return false
     if (productCategoryFilter !== '全部' && r.productCategory !== productCategoryFilter) return false
     return true
-  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  }).sort((a, b) => {
+    const STATUS_ORDER = { 待评审: 0, 开发中: 1, 已上线: 2, 已暂停: 3, 已拒绝: 4 }
+    const sd = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99)
+    if (sd !== 0) return sd
+    return new Date(b.createdAt) - new Date(a.createdAt)
+  })
 
   function getCustomerName(customerId) {
     const c = customers.find((c) => c.id === customerId)
