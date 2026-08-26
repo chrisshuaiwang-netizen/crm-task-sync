@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# WorkBuddy 项目记忆（含内部笔记/偏好，不公开）
+.workbuddy/
+
+# 临时文件
+重启.rtf
