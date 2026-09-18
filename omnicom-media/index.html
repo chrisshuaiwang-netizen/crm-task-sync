@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="OMNICOM MEDIA AI Product Suite — 智能演示、营销内容与创作者协作的一站式入口。"
+    />
+    <title>OMNICOM MEDIA · AI Product Suite</title>
+    <style>
+      :root {
+        --ink: #101010;
+        --paper: #f5f4ef;
+        --paper-deep: #e9e8e2;
+        --line: rgba(16, 16, 16, 0.18);
+        --muted: #696965;
+        --violet: #7168ff;
+        --cyan: #45d3ed;
+        --orange: #ff9b71;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: Inter, "Helvetica Neue", Arial, "PingFang SC",
+          "Microsoft YaHei", sans-serif;
+        text-rendering: optimizeLegibility;
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        overflow-x: hidden;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .container {
+        width: min(1180px, calc(100% - 48px));
+        margin-inline: auto;
+      }
+
+      .site-header {
+        position: relative;
+        z-index: 2;
+        border-bottom: 1px solid var(--line);
+        background: var(--paper);
+      }
+
+      .header-content,
+      .footer-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .header-content {
+        min-height: 84px;
+      }
+
+      .brand-logo {
+        display: block;
+        width: min(300px, 52vw);
+        height: auto;
+      }
+
+      .login-area {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .avatar {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border-radius: 50%;
+        color: var(--paper);
+        background: var(--ink);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .hero {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        padding: clamp(24px, 3.25vw, 42px) 0 clamp(20px, 2.75vw, 36px);
+        border-bottom: 1px solid var(--line);
+        background:
+          linear-gradient(
+            90deg,
+            transparent 0,
+            transparent calc(100% - 1px),
+            rgba(16, 16, 16, 0.05) calc(100% - 1px)
+          ),
+          var(--paper);
+        background-size: max(120px, 10vw) 100%, auto;
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 1;
+        max-width: 980px;
+      }
+
+      .eyebrow,
+      .product-category {
+        margin: 0;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+      }
+
+      h1,
+      h2,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 960px;
+        margin: 26px 0 30px;
+        font-size: clamp(42px, 5.8vw, 82px);
+        font-weight: 700;
+        line-height: 0.97;
+        letter-spacing: -0.075em;
+      }
+
+      .hero-copy {
+        max-width: 540px;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: clamp(16px, 1.7vw, 20px);
+        line-height: 1.65;
+      }
+
+      .hero-orbit,
+      .hero-orbit::before,
+      .hero-orbit::after {
+        position: absolute;
+        border: 1px solid rgba(16, 16, 16, 0.15);
+        border-radius: 50%;
+        content: "";
+      }
+
+      .hero-orbit {
+        z-index: 0;
+        top: 50%;
+        right: max(3vw, 28px);
+        width: min(47vw, 580px);
+        aspect-ratio: 1;
+        background:
+          radial-gradient(
+            circle at 34% 33%,
+            rgba(113, 104, 255, 0.36),
+            transparent 19%
+          ),
+          radial-gradient(
+            circle at 69% 66%,
+            rgba(69, 211, 237, 0.28),
+            transparent 23%
+          );
+        transform: translateY(-50%) rotate(-18deg);
+      }
+
+      .hero-orbit::before {
+        inset: 15%;
+      }
+
+      .hero-orbit::after {
+        inset: 34%;
+      }
+
+      .products {
+        padding: clamp(16px, 2vw, 24px) 0 clamp(60px, 9vw, 108px);
+      }
+
+      .section-intro {
+        display: grid;
+        gap: 13px;
+        margin-bottom: 46px;
+      }
+
+      h2 {
+        margin-bottom: 0;
+        font-size: clamp(32px, 4.1vw, 55px);
+        line-height: 1;
+        letter-spacing: -0.06em;
+      }
+
+      .product-list {
+        border-top: 1px solid var(--ink);
+      }
+
+      .product-row {
+        --row-accent: var(--violet);
+        position: relative;
+        display: grid;
+        grid-template-columns: 74px minmax(150px, 1.1fr) minmax(280px, 2fr) 48px;
+        align-items: center;
+        gap: 24px;
+        min-height: 176px;
+        padding: 30px 5px;
+        border-bottom: 1px solid var(--line);
+        background: transparent;
+        text-decoration: none;
+        transition:
+          background-color 180ms ease,
+          padding-inline 180ms ease;
+      }
+
+      .product-row::before {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 5px;
+        background: var(--row-accent);
+        content: "";
+        opacity: 0;
+        transform: scaleY(0.4);
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+      }
+
+      .product-row:hover {
+        padding-inline: 22px;
+        background: color-mix(in srgb, var(--row-accent) 10%, transparent);
+      }
+
+      .product-row:hover::before,
+      .product-row:focus-visible::before {
+        opacity: 1;
+        transform: scaleY(1);
+      }
+
+      .product-row:focus-visible {
+        z-index: 1;
+        outline: 3px solid var(--ink);
+        outline-offset: -3px;
+        background: color-mix(in srgb, var(--row-accent) 14%, transparent);
+      }
+
+      .product-index {
+        align-self: start;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+      }
+
+      .product-name {
+        font-size: clamp(34px, 4.2vw, 60px);
+        font-weight: 700;
+        letter-spacing: -0.07em;
+      }
+
+      .product-detail {
+        display: grid;
+        gap: 10px;
+        max-width: 390px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.55;
+      }
+
+      .product-arrow {
+        justify-self: end;
+        font-size: 32px;
+        line-height: 1;
+        transition: transform 180ms ease;
+      }
+
+      .product-row:hover .product-arrow,
+      .product-row:focus-visible .product-arrow {
+        transform: translate(5px, -5px);
+      }
+
+      .product-ppt {
+        --row-accent: var(--violet);
+      }
+
+      .product-fang {
+        --row-accent: var(--cyan);
+      }
+
+      .product-k {
+        --row-accent: var(--orange);
+      }
+
+      .site-footer {
+        padding: 25px 0;
+        border-top: 1px solid var(--ink);
+        background: var(--paper-deep);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .aippt-app[hidden], .home-shell[hidden] { display: none; }
+      .aippt-app { min-height: 100vh; background: #f8f7fc; color: #25212f; }
+      .aippt-header { position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 72px; padding: 0 34px; border-bottom: 1px solid #e9e6f0; background: rgba(255,255,255,.94); backdrop-filter: blur(14px); }
+      .app-back { justify-self: start; border: 0; background: transparent; color: #66616f; font-weight: 700; }
+      .app-tabs { display: flex; align-items: center; gap: 8px; height: 72px; }
+      .app-tab { position: relative; height: 44px; padding: 0 26px; border: 0; border-radius: 12px; color: #777180; background: transparent; font-weight: 700; }
+      .app-tab.is-active { color: #7155ef; background: #f0ecff; }
+      .app-tab.is-active::after { position: absolute; right: 25px; bottom: -14px; left: 25px; height: 3px; border-radius: 3px 3px 0 0; background: #7155ef; content: ""; }
+      .app-brand { justify-self: end; width: min(235px, 28vw); height: auto; }
+      .app-panel { width: min(1220px, calc(100% - 64px)); margin: 0 auto; padding: 36px 0 70px; }
+      .app-panel[hidden] { display: none; }
+      .pro-hero { max-width: 700px; margin: 0 auto; padding: 0 0 48px; text-align: center; }
+      .pro-hero h2 { margin: 0 0 26px; font-size: clamp(29px,2.5vw,38px); letter-spacing: -.045em; }
+      .ai-pill { display: none; }
+      .composer { padding: 18px; border: 1px solid #ddd4f5; border-radius: 18px; background: #fff; box-shadow: 0 16px 44px rgba(57,38,130,.08); text-align: left; }
+      .composer textarea { width: 100%; height: 112px; resize: none; border: 0; outline: 0; color: #25212f; background: transparent; font: inherit; font-size: 16px; }
+      .composer-foot { display: flex; align-items: center; justify-content: space-between; }
+      .composer-tools { display: flex; gap: 8px; }
+      .composer-icon { width: 36px; height: 36px; border: 1px solid #e9e6f0; border-radius: 10px; background: #fff; }
+      .generate-button { height: 40px; padding: 0 24px; border: 0; border-radius: 11px; color: #fff; background: linear-gradient(135deg,#7155ef,#9870fa); font-weight: 700; }
+      .generate-button:disabled { color: #aaa3b8; background: #eeeaf7; }
+      .workspace-heading { margin: 0 0 18px; }
+      .workspace-heading h2 { margin: 0 0 4px; font-size: 24px; letter-spacing: -.03em; }
+      .workspace-heading p { margin: 0; color: #817c8d; }
+      .skills-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; }
+      .skill-card, .work-card { overflow: hidden; border: 1px solid #e9e6f0; border-radius: 15px; background: #fff; transition: transform .18s, box-shadow .18s; }
+      .skill-card:hover, .work-card:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(55,42,100,.08); }
+      .skill-builder { padding: 18px; }
+      .skill-builder h3 { margin: 0; }
+      .skill-builder > p { margin: 3px 0 15px; color: #817c8d; font-size: 13px; }
+      .builder-actions { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; }
+      .builder-actions button { min-height: 105px; padding: 12px; border: 1px solid #e9e6f0; border-radius: 10px; background: #fbfaff; text-align: left; }
+      .builder-actions i { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 8px; color: #7155ef; background: #ece6ff; font-style: normal; }
+      .builder-actions b { display: block; margin: 8px 0 2px; }
+      .builder-actions span { color: #817c8d; font-size: 12px; }
+      .card-cover { display: flex; height: 132px; align-items: flex-end; padding: 14px; color: #fff; }
+      .card-cover small { display: block; margin-bottom: 6px; font-size: 10px; font-weight: 700; letter-spacing: .08em; opacity: .75; }
+      .card-cover strong { display: block; max-width: 94%; font-size: 16px; line-height: 1.25; }
+      .theme-gold { color: #58431c; background: linear-gradient(135deg,#fff7df,#edc76a); }
+      .theme-sky { color: #234c86; background: linear-gradient(135deg,#eef7ff,#98c1fb); }
+      .theme-dark { background: linear-gradient(135deg,#151021,#583487); }
+      .theme-blue { background: linear-gradient(135deg,#061a3e,#1469c3); }
+      .theme-green { background: linear-gradient(135deg,#075a41,#2bc67e); }
+      .theme-pink { color:#733a32; background: linear-gradient(135deg,#fff1ef,#ff9b8b); }
+      .card-body { padding: 13px 14px 15px; }
+      .card-body h3 { margin: 0 0 8px; overflow: hidden; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+      .tag { display: inline-block; padding: 3px 7px; border-radius: 6px; color: #6e6978; background: #f3f1f7; font-size: 12px; }
+      #fastPanel { width: 100%; padding: 0 0 70px; }
+      .fast-shell { display: grid; grid-template-columns: 250px minmax(0,1fr); min-height: calc(100vh - 72px); }
+      .fast-sidebar { padding: 22px 12px; border-right: 1px solid #e7e5ec; background: #fff; }
+      .fast-nav { display: grid; gap: 4px; }
+      .fast-nav button { height: 46px; padding: 0 22px; border: 0; border-radius: 7px; color: #4d4956; background: transparent; text-align: left; font-weight: 650; }
+      .fast-nav button.is-active { color: #3079e8; background: #e7f2ff; }
+      .fast-main { min-width: 0; padding: 34px 54px 70px; }
+      .fast-top { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; max-width: 820px; margin-bottom: 58px; }
+      .fast-action { display: flex; min-height: 72px; align-items: center; gap: 14px; padding: 16px; border: 1px solid #e9e6f0; border-radius: 15px; background: #fff; text-align: left; }
+      .fast-action:first-child { border-color: #ddd3ff; background: linear-gradient(135deg,#f2edff,#fff); }
+      .fast-icon { display: grid; width: 43px; height: 43px; flex: 0 0 auto; place-items: center; border-radius: 12px; color: #7155ef; background: #ebe5ff; font-size: 19px; }
+      .fast-action b { display: block; font-size: 16px; }
+      .fast-action span { color: #817c8d; font-size: 13px; }
+      .works-toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:14px; border-bottom:1px solid #dddbe3; }
+      .works-toolbar h2 { margin:0; font-size:22px; }
+      .works-controls { display:flex; gap:9px; }
+      .works-controls input, .works-controls select { height:36px; border:1px solid #dedbe6; border-radius:6px; background:#fff; padding:0 10px; }
+      .works-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 18px; padding-top:18px; }
+      .work-card .card-cover { height: 142px; }
+      .work-meta { display: flex; justify-content: space-between; color: #9994a1; font-size: 12px; }
+      .app-panel.reference-panel { width: 100%; padding: 0; background: #faf9fe; }
+      .reference-shot { display: block; width: 100%; height: auto; margin: 0; }
+
+      @media (max-width: 720px) {
+        .container {
+          width: min(100% - 32px, 1180px);
+        }
+
+        .header-content {
+          min-height: 70px;
+        }
+
+        .hero {
+          padding: 26px 0 24px;
+        }
+
+        h1 {
+          margin-top: 22px;
+          letter-spacing: -0.08em;
+        }
+
+        .hero-orbit {
+          top: 24%;
+          right: -24vw;
+          width: 74vw;
+          opacity: 0.8;
+        }
+
+        .product-row {
+          grid-template-columns: 38px 1fr 34px;
+          gap: 14px;
+          min-height: 0;
+          padding-block: 30px;
+        }
+
+        .product-detail {
+          grid-column: 2 / -1;
+        }
+
+        .product-arrow {
+          grid-column: 3;
+          grid-row: 1;
+          font-size: 28px;
+        }
+
+        .site-footer {
+          padding: 20px 0;
+        }
+
+        .footer-content {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .aippt-header { grid-template-columns: auto 1fr; padding: 0 15px; }
+        .app-back { font-size: 0; }
+        .app-back::after { content: "←"; font-size: 20px; }
+        .app-tabs { justify-self: end; }
+        .app-tab { padding: 0 14px; }
+        .app-tab.is-active::after { right: 14px; left: 14px; }
+        .app-brand { display: none; }
+        .app-panel { width: calc(100% - 30px); padding-top: 28px; }
+        .skills-grid, .fast-top { grid-template-columns: 1fr; }
+        .skill-builder { grid-column: auto; }
+        .builder-actions { grid-template-columns: 1fr; }
+        .fast-shell { grid-template-columns:1fr; }
+        .fast-sidebar { display:none; }
+        .fast-main { padding:28px 15px 50px; }
+        .works-toolbar { align-items:stretch; flex-direction:column; }
+        .works-controls { flex-wrap:wrap; }
+        .works-controls input { flex:1 1 180px; }
+        .works-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+      }
+
+      @media (min-width:721px) and (max-width:1200px) {
+        .skills-grid { grid-template-columns: repeat(4,1fr); }
+        .works-grid { grid-template-columns: repeat(4,1fr); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="homeShell" class="home-shell">
+    <header class="site-header">
+      <div class="container header-content">
+        <img
+          src="OM_Primary Logo_Black.png"
+          alt="OMNICOM MEDIA"
+          class="brand-logo"
+        />
+        <div class="login-area">
+          <span>登录</span>
+          <span class="avatar" aria-hidden="true">O</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="container hero-content">
+          <p class="eyebrow">OMNICOM MEDIA · AI PRODUCT SUITE</p>
+          <h1 id="hero-title">让每一次创意表达，<br />都更有力量。</h1>
+          <p class="hero-copy">
+            从智能演示到营销内容，再到创作者协作——在一个入口，连接每一个增长场景。
+          </p>
+        </div>
+        <div class="hero-orbit" aria-hidden="true"></div>
+      </section>
+
+      <section class="products container" aria-labelledby="products-title">
+        <div class="section-intro">
+          <p class="eyebrow">EXPLORE THE SUITE</p>
+          <h2 id="products-title">选择你的创意工作方式</h2>
+        </div>
+
+        <div class="product-list">
+          <a
+            id="aipptEntry"
+            class="product-row product-ppt"
+            href="#aippt"
+          >
+            <span class="product-index">01</span>
+            <span class="product-name">AI PPT</span>
+            <span class="product-detail">
+              <span class="product-category">INTELLIGENT PRESENTATION</span>
+              <span>从想法到专业演示，一键完成表达。</span>
+            </span>
+            <span class="product-arrow" aria-hidden="true">↗</span>
+            <span class="sr-only">进入 AI PPT</span>
+          </a>
+
+          <a
+            class="product-row product-fang"
+            href="https://ppt-test-v114.wxbjq.top/marketing/generate"
+          >
+            <span class="product-index">02</span>
+            <span class="product-name">小方</span>
+            <span class="product-detail">
+              <span class="product-category">AI MARKETING</span>
+              <span>让每一份营销内容，更快转化为行动。</span>
+            </span>
+            <span class="product-arrow" aria-hidden="true">↗</span>
+            <span class="sr-only">进入小方</span>
+          </a>
+
+          <a
+            class="product-row product-k"
+            href="https://www.kolclaw.cn/index"
+          >
+            <span class="product-index">03</span>
+            <span class="product-name">小K</span>
+            <span class="product-detail">
+              <span class="product-category">CREATOR COLLABORATION</span>
+              <span>连接创作者协作，让影响力持续增长。</span>
+            </span>
+            <span class="product-arrow" aria-hidden="true">↗</span>
+            <span class="sr-only">进入小K</span>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-content">
+        <span>OMNICOM MEDIA</span>
+        <span>AI PRODUCT SUITE</span>
+        <span>© 2026</span>
+      </div>
+    </footer>
+    </div>
+
+    <section id="aipptApp" class="aippt-app" hidden>
+      <header class="aippt-header">
+        <button id="backHome" class="app-back" type="button">← 返回首页</button>
+        <nav class="app-tabs" role="tablist" aria-label="AIPPT 版本切换">
+          <button class="app-tab is-active" type="button" role="tab" aria-selected="true" data-panel="proPanel">专业版</button>
+          <button class="app-tab" type="button" role="tab" aria-selected="false" data-panel="fastPanel">极速版</button>
+        </nav>
+        <img class="app-brand" src="OM_Primary Logo_Black.png" alt="OMNICOM MEDIA" />
+      </header>
+
+      <section id="proPanel" class="app-panel reference-panel" role="tabpanel">
+        <img class="reference-shot" src="assets/aippt-pro.png" alt="AIPPT 专业版页面" />
+      </section>
+
+      <section id="fastPanel" class="app-panel reference-panel" role="tabpanel" hidden>
+        <img class="reference-shot" src="assets/aippt-fast.png" alt="AIPPT 极速版页面" />
+      </section>
+      <div hidden aria-hidden="true"><div id="skillsGrid"></div><div id="worksGrid"></div><input id="workSearch"><textarea id="pptPrompt"></textarea><button id="samplePrompt"></button><button id="generatePpt"></button></div>
+    </section>
+
+    <script>
+      const skills = [
+        ["theme-gold","FROM OBSERVER TO CREATOR","成为主角 · 年轻人的创意能力进化档案","教育教学"],
+        ["theme-sky","AI CONSULTING","像顶级咨询合伙人一样写 AI 行业分析","数据报告"],
+        ["theme-dark","LAUNCH ONE","像顶级硬件发布会一样讲清智能产品","营销增长"],
+        ["theme-gold","BUSINESS STORY","用数字说话的晋升答辩","职场办公"],
+        ["theme-dark","VALUE GROWTH","年度增长策略汇报","咨询提案"],
+        ["theme-blue","SMART BUILDING","园区智慧能源升级方案","产品科技"],
+        ["theme-gold","LUXURY HOSPITALITY","高端疗愈度假酒店品牌升级提案","营销增长"],
+        ["theme-sky","AI PRODUCT","企业 AI 产品方案汇报","产品科技"],
+        ["theme-dark","DESIGN REVIEW","用设计公司的视角讲透年度复盘","咨询提案"],
+        ["theme-sky","CEO REPORT","董事会级 CEO 年度经营报告","职场办公"],
+        ["theme-green","GROWTH PLAN","年轻品牌增长方案","产品科技"],
+        ["theme-dark","STRATEGY 2027","企业年度战略规划","咨询提案"],
+        ["theme-blue","YEARLY SUMMARY","年度经营汇报","工作总结"],
+        ["theme-gold","SIMPLIFY","把复杂变简单","咨询提案"],
+        ["theme-sky","TALENT REVIEW","人才盘点报告","职场办公"]
+      ];
+      const works = [
+        ["theme-green","绿色能源 · 未来趋势","新能源的未来发展和形态","周二 15:26"],
+        ["theme-dark","AI WORKPLACE","AI 协作提升日常办公效率","周一 18:36"],
+        ["theme-blue","AI · 效率革命","智能办公效率提升指南","周一 18:20"],
+        ["theme-pink","BEAUTY REPORT","美妆行业 618 专题报告","9月8日 10:03"],
+        ["theme-sky","WEATHER & LIFE","天气预报：科学与生活","7月23日 17:39"],
+        ["theme-blue","SPACE DATA","太空数据中心：未来信息枢纽","7月13日 18:09"],
+        ["theme-dark","BUSINESS EMPIRE","马斯克的财富帝国","6月16日 18:38"],
+        ["theme-sky","EDUCATION DATA","高考数据变迁与趋势","6月8日 16:26"],
+        ["theme-gold","SAFETY GUIDE","拖拉机安全操作规程","6月8日 14:35"],
+        ["theme-blue","EMBODIED AI","具身智能：开启智能新时代","6月2日 10:05"],
+        ["theme-dark","BEYOND EARTH","SpaceX 探秘","5月27日 11:27"],
+        ["theme-sky","PRESENTATION","提升直播表现力的关键技巧","5月25日 11:15"],
+        ["theme-blue","INDUSTRY 2026","行业崛起与核心变革","5月15日 11:06"],
+        ["theme-gold","OPEN SOURCE","开源仿生机械爪技术解析","4月7日 14:16"],
+        ["theme-green","PROJECT REVIEW","项目进展与下一步规划","3月28日 09:42"],
+        ["theme-dark","MARKET INSIGHT","消费市场洞察报告","3月12日 16:30"],
+        ["theme-pink","BRAND STORY","品牌年轻化传播方案","2月26日 13:18"],
+        ["theme-sky","DATA FUTURE","数据智能的未来趋势","2月8日 10:22"]
+      ];
+      skillsGrid.insertAdjacentHTML("beforeend", skills.map(x => `<article class="skill-card"><div class="card-cover ${x[0]}"><div><small>${x[1]}</small><strong>${x[2]}</strong></div></div><div class="card-body"><h3>${x[2]}</h3><span class="tag">${x[3]}</span></div></article>`).join(""));
+      worksGrid.innerHTML = works.map(x => `<article class="work-card"><div class="card-cover ${x[0]}"><div><small>${x[1]}</small><strong>${x[2]}</strong></div></div><div class="card-body"><h3>${x[2]}</h3><div class="work-meta"><span>${x[3]} · 浏览</span><span>•••</span></div></div></article>`).join("");
+
+      function openAippt() { homeShell.hidden = true; aipptApp.hidden = false; switchPanel("proPanel"); history.replaceState(null, "", "#aippt"); scrollTo(0, 0); }
+      function closeAippt() { aipptApp.hidden = true; homeShell.hidden = false; history.replaceState(null, "", location.pathname); scrollTo(0, 0); }
+      function switchPanel(id) { document.querySelectorAll(".app-tab").forEach(tab => { const active = tab.dataset.panel === id; tab.classList.toggle("is-active", active); tab.setAttribute("aria-selected", String(active)); }); proPanel.hidden = id !== "proPanel"; fastPanel.hidden = id !== "fastPanel"; scrollTo(0, 0); }
+      aipptEntry.addEventListener("click", e => { e.preventDefault(); openAippt(); });
+      backHome.addEventListener("click", closeAippt);
+      document.querySelectorAll(".app-tab").forEach(tab => tab.addEventListener("click", () => switchPanel(tab.dataset.panel)));
+      pptPrompt.addEventListener("input", () => generatePpt.disabled = !pptPrompt.value.trim());
+      samplePrompt.addEventListener("click", () => { pptPrompt.value = "制作一份 2026 年人工智能行业趋势报告"; pptPrompt.dispatchEvent(new Event("input")); });
+      workSearch.addEventListener("input", () => { const q = workSearch.value.trim().toLowerCase(); document.querySelectorAll("#worksGrid .work-card").forEach(card => card.hidden = !card.textContent.toLowerCase().includes(q)); });
+      if (location.hash === "#aippt") openAippt();
+    </script>
+  </body>
+</html>
